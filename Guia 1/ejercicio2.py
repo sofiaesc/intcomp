@@ -26,13 +26,14 @@ for i in range(cant_e+1):
 
 # ------------- ALGORITMO ------------- #
 epoca = 0
-epoca_max = 20 # Máximo de iteraciones
+epoca_max = 10 # Máximo de iteraciones
 cont_error = 0
 gamma = 0.1 # Velocidad de aprendizaje
 errores = np.zeros(epoca_max)
 perc_error_max = 0.02 # Porcentaje máximo de error
 error_max = perc_error_max * len(trn) # Cantidad máxima de errores
 w_saved = [] # Inicializo vector de pesos guardados
+w_saved.append(w) # Guardo el primer set de pesos, el inicializado al azar
 
 while (epoca < epoca_max):
     cont_error = 0
@@ -55,7 +56,6 @@ while (epoca < epoca_max):
 # ------------- ANIMACIÓN ------------- #
 fig,ax = plt.subplots()
 ax.set(xlim=[-2,2],ylim=[-2,2],xlabel='x1',ylabel='x2',title='Evolución de la recta de separación')
-ax = fig.add_subplot()
 
 # PUNTOS:
 for i in range(len(trn)):
@@ -78,5 +78,5 @@ def update(frame): # Actualizo la recta de separación
 ani = animation.FuncAnimation(fig=fig,func=update,frames=len(w_saved),interval=20,repeat=False)
 plt.show()
 
-writergif = animation.PillowWriter(fps=20)
+writergif = animation.PillowWriter(fps=3)
 ani.save('./resultados/animacion.gif',writer=writergif)
