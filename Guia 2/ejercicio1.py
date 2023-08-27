@@ -9,7 +9,12 @@ cant_entradas = np.array([2,3,2,1]) # Variable a cambiar según mi red neuronal
 cant_capas = len(cant_entradas) - 1
 cant_salidas = cant_entradas[cant_capas]
 
-# ------- DATOS INICIALES ------- #
+
+#----------------------------------------------------------#
+#---------------------ENTRENAMIENTO------------------------#
+#----------------------------------------------------------#
+
+# ----> DATOS DE ENTRADA
 trn = np.loadtxt('./data/XOR_trn.csv',delimiter=',')
 
 yd = [] # Salida esperadas
@@ -37,18 +42,17 @@ for i in range(len(cant_entradas)-1):
 y = np.empty(cant_capas,dtype=object)
 delta = np.empty(cant_capas,dtype=object)
 
-# Otros datos para el algoritmo:
-epoca = 0
-epoca_max = 10 # Máximo de iteraciones
-mu = 0.1 # Velocidad de aprendizaje
-b = 0.5 # Constante b para sismóidea
-perc_error_max = 0.02 # Porcentaje máximo de error
+# ----> DATOS PARA EL ALGORITMO:
+epoca = 0               # Contador para época actual
+epoca_max = 50          # Máximo de iteraciones
+mu = 0.01               # Velocidad de aprendizaje
+b = 1                   # Constante b para sismóidea
+perc_error_max = 0.05   # Porcentaje máximo de error
 errores_por_epoca = []
 mse_por_epoca = []
 
-#----------------------------------------------------------#
-# ALGORITMO (ENTRENAMIENTO):
-while (epoca < epoca_max): 
+# ----> ALGORITMO:
+while (epoca < epoca_max):  
     
     #--------------------------------#
     #--------- Aprendizaje ----------#
@@ -56,31 +60,27 @@ while (epoca < epoca_max):
 
     for patron in range(len(trn)):
 
-        # -------- PROPAGACIÓN HACIA ADELANTE: -------- #
-        entradas = trn[patron]
+        # PROPAGACIÓN HACIA ADELANTE: Obtengo la salida de las capas y las propago como entradas de las próximas
+        entradas = trn[patron]          # La primera capa tiene las entradas en el archivo .csv
         for i in range(cant_capas):
-            v = w[i]@entradas # Producto interno de pesos y entradas
-            v_a = 2/(1+np.exp(-b*v)) - 1 # Función de activación
-            y[i]=v_a # Agrego la salida al vector de salidas
-            entradas = np.concatenate(([-1],v_a),axis=None) # Entrada de la próxima capa es la salida de esta capa
+            v = w[i]@entradas                  # Producto interno de pesos y entradas
+            y[i] = 2/(1+np.exp(-b*v))-1        # Salida con función de activación
+            entradas = np.hstack((-1,y[i]))    # Entrada de la próxima capa es la salida de esta capa
         
-        # ---------- PROPAGACIÓN HACIA ATRÁS: --------- #
-        error = y[-1] - yd[patron]
-        # Con el error, obtengo el delta de la capa de salida
-        delta[-1]=error*(1/2)*(1+y[-1])*(1-y[-1])
-        # Propago ese delta hacia las capas anteriores:
-        for i in range(cant_capas-1,0,-1): # Voy de la capa N hasta la 1
-            w_i = w[i][:,1:].T
+        # PROPAGACIÓN HACIA ATRÁS: Obtengo el delta de la capa de salida y lo propago a las capas anteriores
+        error = yd[patron] - y[-1]                    
+        delta[-1]=error*(1/2)*(1+y[-1])*(1-y[-1])       # Con el error, obtengo el delta de la capa de salida
+        for i in range(cant_capas-1,0,-1):
+            w_i = w[i][:,1:].T                          # No tomo el peso w0 (umbral) porque no tiene delta para propagar
             d = np.dot(w_i,delta[i])
-            delta[i-1] = d*(1/2)*(1+y[i-1])*(1-y[i-1])
+            delta[i-1] = d*(1/2)*(1+y[i-1])*(1-y[i-1])  # Con los pesos de la capa i obtenemos el delta de la capa i-1
         
-        # ----------- ACTUALIZAR LOS PESOS: ----------- # 
-        # !!!!!! FIXME
-        entradas = trn[patron]
+        # ACTUALIZAR LOS PESOS: Ajusto los pesos con la velocidad de aprendizaje, la entrada y su delta.
+        entradas = trn[patron]          # La primera capa tiene las entradas en el archivo .csv
         for i in range(cant_capas):
-            delta_peso = mu*delta[i]*entradas
-            w[i] += delta_peso 
-            entradas = np.concatenate(([-1],y[i]),axis=None) # entrada para próxima capa es la salida de esta
+            delta_peso = mu*(np.outer(delta[i],entradas))
+            w[i] += delta_peso
+            entradas = np.hstack((-1,y[i]))    # Entrada para próxima capa es la salida de esta
         
     #--------------------------------#
     #---------- Evaluación ----------#
@@ -90,20 +90,20 @@ while (epoca < epoca_max):
 
     for patron in range(len(trn)): 
 
-        # PROPAGACIÓN HACIA ADELANTE
-        entradas = trn[patron]
+        # PROPAGACIÓN HACIA ADELANTE: Obtengo la salida de las capas y las propago como entradas de las próximas
+        entradas = trn[patron]          # La primera capa tiene las entradas en el archivo .csv
         for i in range(cant_capas):
-            v = w[i]@entradas # Producto interno de pesos y entradas
-            v_a = 2/(1+np.exp(-b*v)) - 1 # Función de activación
-            y[i]=v_a # Agrego la salida al vector de salidas
-            entradas = np.concatenate(([-1],v_a),axis=None) # Entrada de la próxima capa es la salida de esta capa
+            v = w[i]@entradas                  # Producto interno de pesos y entradas
+            y[i] = 2/(1+np.exp(-b*v)) - 1      # Salida con función de activación
+            entradas = np.hstack((-1,y[i]))    # Entrada de la próxima capa es la salida de esta capa
 
-        # CODIFICACIÓN:
-        yc = -1 if(y < 0) else 1
+        # CODIFICACIÓN: Función signo
+        if (y[-1] < 0): yc = -1
+        else: yc = 1
 
         # Actualizo contadores de error:
-        if(yd != yc): cont_errores += 1
-        cont_mse += np.sum(np.square(yd-yc)) 
+        if(yd[patron] != yc): cont_errores += 1
+        cont_mse += np.sum(np.square(yd[patron]-yc)) 
 
     # Actualizo arrays para grafica de error:
     mse = cont_mse/len(trn)
@@ -111,9 +111,42 @@ while (epoca < epoca_max):
     errores_por_epoca.append(cont_errores)
     # Porcentaje de error para criterio de parada:
     perc_error = cont_errores*100/len(trn)
-    if(perc_error > perc_error_max): break
+    if(perc_error < perc_error_max): break
 
     epoca += 1
 
+print('Finalizó el entrenamiento en la época ',epoca,' con ',cont_errores,'/',len(trn),' errores')
+
 #----------------------------------------------------------#
-# ALGORITMO (TESTING):
+#------------------------TESTING---------------------------#
+#----------------------------------------------------------#
+
+# ----> DATOS DE ENTRADA:
+tst = np.loadtxt('./data/XOR_tst.csv',delimiter=',')
+
+yd = []                         # Salidas esperadas
+for i in range(len(tst)):
+    fila = tst[i]
+    cant_e = cant_entradas[0]   # Cantidad de entradas
+    yd.append(fila[cant_e])     
+    aux = [-1]                  # Añado entrada -1 correspondiente al umbral/sesgo
+    for j in range(cant_e):
+        aux.append(fila[j])
+    tst[i] = aux                # Vector de entradas por patrón
+
+# ----> ALGORITMO:
+y = np.empty(cant_capas,dtype=object)   # Vector de salidas
+cont_errores = 0                        # Contador de errores
+
+for patron in range(len(tst)): 
+    entradas = tst[patron]
+    for i in range(cant_capas):
+        v = w[i]@entradas                   # Producto interno de pesos y entradas
+        y[i] = 2/(1+np.exp(-b*v)) - 1       # Salida con función de activación
+        entradas = np.hstack((-1,y[i]))     # La entrada de la próxima capa es la salida de la actual.
+
+    if (y[-1] < 0): yc = -1
+    else: yc = 1
+    if(yd[patron] != yc): cont_errores += 1
+
+print('Finalizó la prueba con ',cont_errores,'/',len(tst),' errores.')
