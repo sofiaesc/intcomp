@@ -2,11 +2,10 @@ import random
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 import matplotlib.animation as animation
-from sklearn.metrics.cluster import contingency_matrix
 
-def kmedias(k,cant_e,archivo):
+def kmedias(k,cant_e,archivo,max_epoca):
+    random.seed()   # Para que se inicialicen igual con los distintos k así comparo justamente.
 
     # Levanto datos del archivo
     trn = np.loadtxt(archivo,delimiter=',')
@@ -21,7 +20,6 @@ def kmedias(k,cant_e,archivo):
     for i in range(k):
         c[i] = random.choice(inputs)              # Patrón de entrada al azar
     
-    max_epoca = 50
     epoca = 1
     last_input_centroid = np.empty(len(inputs))     # Vector donde guardo la última asignación de centroides a patrones
     input_centroid = np.empty(len(inputs))          # Vector donde guardo la asignación actual de centroides a patrones
@@ -46,4 +44,4 @@ def kmedias(k,cant_e,archivo):
 
         epoca += 1
 
-    return inputs,input_centroid    # Devuelvo patrones de entrada y los centroides que le corresponden a cada una
+    return inputs,c,input_centroid    # Devuelvo patrones de entrada, los centroides y los centroides que le corresponden a cada entrada
