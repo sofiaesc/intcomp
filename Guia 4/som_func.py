@@ -1,5 +1,6 @@
 import random
 import csv
+import copy
 import numpy as np
 
 def som(filas,columnas,rv,cant_e,archivo):
@@ -33,7 +34,8 @@ def som(filas,columnas,rv,cant_e,archivo):
     mu = 0.01          # Velocidad de aprendizaje
     epoca = 0
     epoca_max = 50
-    W_saved = [np.copy(W)]
+    tol = 1e-4
+    W_saved = [copy.deepcopy(W)]
 
     while epoca < epoca_max:
 
@@ -76,9 +78,16 @@ def som(filas,columnas,rv,cant_e,archivo):
                         if(dR < columnas):
                             W[d,dR] += inc
         
-        if(np.array_equal(W_saved[-1],W)):        # Si ya no se actualizan los pesos, corto.
+        flag = False
+        for i in range(filas):
+            for j in range(columnas):
+                W_last = W_saved[-1]
+                if not np.all(np.abs(W_last[i,j] - W[i,j]) < tol):
+                    flag = True  # Si hay alguna diferencia mayor que la tolerancia, pongo bandera en true y continúo con las épocas
+        if flag == False:
             break
-        W_saved.append(np.copy(W))
+
+        W_saved.append(copy.deepcopy(W))
 
         epoca += 1
 

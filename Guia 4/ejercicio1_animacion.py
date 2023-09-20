@@ -1,5 +1,6 @@
 import random
 import csv
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -28,7 +29,8 @@ for i in range(filas):
 mu = 0.01          # Velocidad de aprendizaje
 epoca = 0
 epoca_max = 50
-W_last = np.copy(W)
+tol = 1e-4
+W_last = copy.deepcopy(W)
 
 plt.ion()
 fig,ax = plt.subplots()
@@ -139,10 +141,15 @@ while epoca < epoca_max:
                             ax.plot([w1[0],w2[0]],[w1[1],w2[1]],color=c)
     plt.pause(0.3)
 
-    if(np.array_equal(W,W_last)):        # Si ya no se actualizan los pesos, corto.
+    flag = False
+    for i in range(filas):
+        for j in range(columnas):
+            if not np.all(np.abs(W_last[i,j] - W[i,j]) < tol):
+                flag = True   # Si hay alguna diferencia mayor que la tolerancia, pongo bandera en true y continúo con las épocas
+    if flag == False:
         break
-    W_last = np.copy(W)
 
+    W_last = copy.deepcopy(W)
     epoca += 1
 
 plt.show()
