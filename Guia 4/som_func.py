@@ -1,87 +1,70 @@
 import random
 import csv
 import copy
+import time
 import numpy as np
 
-def som(filas,columnas,v_rv,v_epoca_max,v_mu,cant_e,tol,archivo):
-    # ---------------------------------------- #
-    # ----------- INICIALIZACIÓN: ------------ #
-    # ---------------------------------------- #
+def som(inputs,W,max_epocas,v_rv,v_mu,tol):
+    W_last = copy.deepcopy(W)
+    filas,columnas = W_last.shape
+    inicio = time.time()
+    for epoca in range(max_epocas):
+        for input in inputs:
+            # Decrecimiento de los parámetros para etapa de transición:
+            step = (v_mu[0] - v_mu[1])/max_epocas
+            mu = v_mu[0] - epoca*step             # Si v_mu[0] = v_mu[1], step = 0 y mu no se modifica.
+            step = (v_rv[0] - v_rv[1])/max_epocas
+            rv = round(v_rv[0] - epoca*step)      # Lo mismo para rv.
 
-    # Levanto datos del archivo
-    trn = np.loadtxt(archivo,delimiter=',')
-    inputs = np.empty(len(trn),dtype=object)      # Vector de entradas
+            # Obtengo neurona ganadora buscando peso de menor distancia en W:
+            dist = [[np.linalg.norm(input - w) for w in row] for row in W]
+            indice = np.unravel_index(np.argmin(dist),W.shape)
 
-    for i in range(len(trn)):
-        fila = trn[i]
-        inputs[i] = fila[0:cant_e]
-
-    # Inicializo al azar los pesos:
-    W = np.empty([filas,columnas], dtype=object)
-    for i in range(filas):
-        for j in range(columnas):
-            W[i,j] = np.random.rand(cant_e)-0.5
-
-    # ---------------------------------------- #
-    # ------------ ENTRENAMIENTO: ------------ #
-    # ---------------------------------------- #
-    for etapa in range(3): # tres etapas: ordenamiento global, transición y ajuste fino (convergencia)
-        rv = v_rv[etapa]
-        mu = v_mu[etapa]
-        epoca = 0
-        W_saved = [copy.deepcopy(W)]
-
-        while epoca < v_epoca_max[etapa]:
-
-            for input in inputs:
-                # Obtengo neurona ganadora buscando peso de menor distancia en W:
-                dist = [[np.linalg.norm(input - w) for w in row] for row in W]
-                indice = np.unravel_index(np.argmin(dist),W.shape)
-
-                # ACTUALIZACIONES
-                error = input - W[indice]
-                inc = mu*error
-                
-                # Me tengo que fijar que no se me vaya a índices negativos o fuera de los límites de la matriz
-                for k in range(0,rv+1):           
-                    d = indice[0] + k                 # Me desplazo una fila abajo
-                    if (d < filas):
-                        W[d,indice[1]] += inc
-                        for j in range(1,rv+1-k):       # En esa fila, voy a la izquierda
-                            dL = indice[1] - j
-                            if(dL > -1): W[d,dL] += inc
-                            else: break
-                        for j in range(1,rv+1-k):       # En esa fila, voy a la derecha
-                            dR = indice[1] + j
-                            if(dR < columnas): W[d,dR] += inc
-                            else: break
-                    else: break
-                
-                for k in range(1,rv+1): 
-                    d = indice[0] - k                 # Me desplazo una fila arriba
-                    if (d > -1):
-                        W[d,indice[1]] += inc
-                        for j in range(1,rv+1-k):       # En esa fila, voy a la izquierda
-                            dL = indice[1] - j
-                            if(dL > -1): W[d,dL] += inc
-                            else: break
-                        for j in range(1,rv+1-k):       # En esa fila, voy a la derecha
-                            dR = indice[1] + j
-                            if(dR < columnas): W[d,dR] += inc
-                            else: break
-                    else: break
+            # ACTUALIZACIONES
+            # Me tengo que fijar que no se me vaya a índices negativos o fuera de los límites de la matriz
+            for k in range(0,rv+1):                 # Empieza en 0 para hacer la fila de la neurona ganadora      
+                d = indice[0] + k                   # Me desplazo una fila abajo
+                if (d < filas):
+                    W[d,indice[1]] += mu*(input - W[d,indice[1]])
+                    for j in range(1,rv+1-k):       # En esa fila, voy a la izquierda
+                        dL = indice[1] - j
+                        if(dL > -1): W[d,dL] += mu*(input - W[d,dL])
+                        else: break
+                    for j in range(1,rv+1-k):       # En esa fila, voy a la derecha
+                        dR = indice[1] + j
+                        if(dR < columnas): W[d,dR] += mu*(input - W[d,dR])
+                        else: break
+                else: break
+            
+            for k in range(1,rv+1):               # Empieza en 1 porque ya hice la fila de la neurona ganadora antes
+                d = indice[0] - k                 # Me desplazo una fila arriba
+                if (d > -1):
+                    W[d,indice[1]] += mu*(input - W[d,indice[1]])
+                    for j in range(1,rv+1-k):       # En esa fila, voy a la izquierda
+                        dL = indice[1] - j
+                        if(dL > -1): 
+                            W[d,dL] += mu*(input - W[d,dL])
+                        else: break
+                    for j in range(1,rv+1-k):       # En esa fila, voy a la derecha
+                        dR = indice[1] + j
+                        if(dR < columnas): W[d,dR] += mu*(input - W[d,dR])
+                        else: break
+                else: break
         
-            flag = False
-            for i in range(filas):
-                for j in range(columnas):
-                    W_last = W_saved[-1]
-                    if not np.all(np.abs(W_last[i,j] - W[i,j]) < tol):
-                        flag = True  # Si hay alguna diferencia mayor que la tolerancia, pongo bandera en true y continúo con las épocas
-            if flag == False:
-                break
+        # Analizo convergencia para ver si corto antes del máximo de épocas:
+        flag = False
+        for i in range(filas):
+            for j in range(columnas):
+                if not np.all(np.abs(W_last[i,j] - W[i,j]) < tol):
+                    flag = True  # Si hay alguna diferencia mayor que la tolerancia, pongo bandera en true y continúo con las épocas
+        if flag == False:
+            break
 
-            W_saved.append(copy.deepcopy(W))
-            epoca += 1
+        W_last = copy.deepcopy(W)
+        epoca += 1
+    
+    fin = time.time()
+    print('El entrenamiento finalizó en la época',epoca,'en',round(fin-inicio,2),'segundos.')
 
     input_neurona = []
     for input in inputs:
@@ -89,4 +72,4 @@ def som(filas,columnas,v_rv,v_epoca_max,v_mu,cant_e,tol,archivo):
         indice = np.argmin(dist)
         input_neurona.append(indice)
 
-    return inputs,W,input_neurona
+    return W,input_neurona

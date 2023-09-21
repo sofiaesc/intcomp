@@ -4,17 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-def kmedias(k,cant_e,archivo,max_epoca):
+def kmedias(k,inputs,max_epoca):
     random.seed()   # Para que se inicialicen igual con los distintos k así comparo justamente.
 
-    # Levanto datos del archivo
-    trn = np.loadtxt(archivo,delimiter=',')
-    inputs = np.empty(len(trn),dtype=object)      # Vector de entradas
-
-    for i in range(len(trn)):
-        fila = trn[i]
-        inputs[i] = fila[0:cant_e]
-    
     # Inicialización de centroides
     c = np.empty(k,dtype=object)
     for i in range(k):

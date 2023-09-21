@@ -6,11 +6,7 @@ import matplotlib.pyplot as plt
 
 filas = 15                       # Filas de neuronas
 columnas = 15                    # Columnas de neuronas
-v_rv = [7,3,0]                  # Radio de vecindad
-v_epoca_max = [1,1,1]           # Épocas máximas por etapa --> pongo pocas para ver los vecinos dados distintos rv
-v_mu = [0.7, 0.1, 0.02]         # Velocidad de aprendizaje
-tol = 1e-3
-
+v_rv = [8,6,4,2,0]           
 inputs = np.loadtxt('./data/circulo.csv',delimiter=',')
 cant_e = len(inputs[0])
 
@@ -24,10 +20,8 @@ fig,ax = plt.subplots()
 
 for _ in range(5):  # Pruebo un punto con las tres etapas y paso a otro punto
     indice = [random.randint(0,filas-1),random.randint(0,columnas-1)]   # Elijo un nodo al azar
-    for etapa in range(3): # tres etapas: ordenamiento global, transición y ajuste fino (convergencia)
-        rv = v_rv[etapa]
-        mu = v_mu[etapa]
-        epoca = 0
+    for prueba in range(len(v_rv)): # pruebo para distintos rv
+        rv = v_rv[prueba]
     
         ax.clear()
         ax.set(xlim=[-1,filas],ylim=[-1,columnas],title='Neuronas vecinas')
