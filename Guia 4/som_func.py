@@ -50,15 +50,6 @@ def som(inputs,W,max_epocas,v_rv,v_mu,tol):
                         if(dR < columnas): W[d,dR] += mu*(input - W[d,dR])
                         else: break
                 else: break
-        
-        # Analizo convergencia para ver si corto antes del máximo de épocas:
-        flag = False
-        for i in range(filas):
-            for j in range(columnas):
-                if not np.all(np.abs(W_last[i,j] - W[i,j]) < tol):
-                    flag = True  # Si hay alguna diferencia mayor que la tolerancia, pongo bandera en true y continúo con las épocas
-        if flag == False:
-            break
 
         W_last = copy.deepcopy(W)
         epoca += 1
